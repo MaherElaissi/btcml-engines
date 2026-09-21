@@ -2,6 +2,8 @@
 
 Multi-timeframe BTC/USDT prediction engines (1s, 1m, 5m, 10m, 1h) combined by a meta-engine.
 
+See [TODO.md](TODO.md) for the full roadmap and progress.
+
 ## Phase 0: data foundation
 
 ```
