@@ -1,0 +1,36 @@
+symbol = "BTCUSDT"
+data_dir = "data"
+
+[binance]
+archive_url = "https://data.binance.vision"
+api_url = "https://api.binance.com"
+
+# Months of history to download per raw interval (plus the current partial month).
+# Only 1s and 1m are downloaded; 5m / 10m / 1h are built from 1m ("btcml build-bars").
+[history]
+"1m" = 24
+"1s" = 4
+
+[news]
+poll_seconds = 120
+
+# Feed URLs change over time; the collector logs and skips any feed that fails.
+[[news.feeds]]
+name = "coindesk"
+url = "https://www.coindesk.com/arc/outboundfeeds/rss"
+
+[[news.feeds]]
+name = "cointelegraph"
+url = "https://cointelegraph.com/rss"
+
+[[news.feeds]]
+name = "decrypt"
+url = "https://decrypt.co/feed"
+
+[[news.feeds]]
+name = "bitcoinmagazine"
+url = "https://bitcoinmagazine.com/feed"
+
+[[news.feeds]]
+name = "fed_press"
+url = "https://www.federalreserve.gov/feeds/press_all.xml"
