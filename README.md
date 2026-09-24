@@ -27,7 +27,8 @@ uv run btcml serve                  # read-only API on http://127.0.0.1:8000
 uv run btcml openapi                # regenerate openapi.json after changing the API
 ```
 
-Interactive docs at http://127.0.0.1:8000/docs. The dashboard (separate repo) generates its typed
+Interactive docs at http://127.0.0.1:8000/docs. The dashboard lives in a separate repo,
+`btcml-dashboard` (run `npm run dev` there while `btcml serve` runs here), and generates its typed
 client from `openapi.json`. Routes live under `/api/v1`:
 
 | Route | What |

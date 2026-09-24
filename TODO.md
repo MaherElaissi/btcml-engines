@@ -104,10 +104,12 @@ Bind the API to localhost by default; add a token before exposing it on a networ
       `/jobs` lists them and `/ws/jobs` streams progress
 
 **Frontend (separate repo)**
-- [ ] Stack: Vite + React + TypeScript, typed client generated from the OpenAPI spec, TradingView
+- [x] Stack: Vite + React + TypeScript, typed client generated from the OpenAPI spec, TradingView
       lightweight-charts for candles, a light charting lib for metrics
-- [ ] Overview page: roadmap progress per phase, running jobs, collector health
-- [ ] Data page: coverage and gaps per interval, candle chart, news volume over time
+- [x] Roadmap page: progress per phase with expandable checklists
+- [x] Phase 0 page: verification checks with fix commands, what was built, coverage and gaps per
+      interval, candle chart, news collector health and volume
+- [ ] Overview additions: running jobs (needs the jobs table), collector health at a glance
 - [ ] Models page: runs table, fold-by-fold metrics vs baselines, calibration plot, feature importance
 - [ ] Backtest page: equity / drawdown curves, engine vs baseline comparison after costs
 - [ ] Live page: candle chart with prediction markers, rolling hit rate, live vs backtest drift
