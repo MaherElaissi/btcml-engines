@@ -9,7 +9,9 @@ dependencies = [
     "pyarrow>=16",
     "duckdb>=1.0",
     "feedparser>=6.0",
-    "tzdata>=2024.1",  # Windows has no system tz database; polars needs it for UTC datetimes
+    "tzdata>=2024.1", # Windows has no system tz database; polars needs it for UTC datetimes
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
 ]
 
 [project.scripts]

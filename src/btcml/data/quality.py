@@ -43,26 +43,39 @@ def analyze(df: pl.DataFrame, interval: str, raw_rows: int | None = None) -> dic
         "bad_ohlc_rows": bad_ohlc,
         "negative_volume_rows": df.filter(pl.col("volume") < 0).height,
         "zero_volume_pct": 100 * df.filter(pl.col("volume") == 0).height / df.height,
+        # built bars only: buckets assembled from fewer source candles than they should hold
+        "incomplete_bars": (
+            df.filter(pl.col("n_src") < secs // 60).height if "n_src" in df.columns else None
+        ),
     }
 
 
 def check(cfg: Config, interval: str) -> dict:
+    if interval not in ("1s", "1m"):  # 5m / 10m / 1h are built from 1m ("btcml build-bars")
+        path = cfg.bars_path(interval)
+        if not path.exists():
+            raise FileNotFoundError(f"No {interval} bars at {path}. Run: btcml build-bars")
+        return analyze(pl.read_parquet(path), interval)
+    df = load_klines(cfg, interval)  # raises a clear error when there is no data yet
     raw_rows = (
         pl.scan_parquet(kline_files(cfg, interval)).select(pl.len()).collect().item()
     )
-    return analyze(load_klines(cfg, interval), interval, raw_rows)
+    return analyze(df, interval, raw_rows)
 
 
 def format_report(r: dict) -> str:
     lines = [
         f"== {r['interval']} ==",
         f"rows: {r['rows']:,}   range: {r['first']} -> {r['last']}",
-        f"duplicates removed: {r['duplicates_removed']}",
         f"missing candles: {r['missing_rows']:,} of {r['expected_rows']:,} "
         f"({r['missing_pct']:.3f}%) in {r['gap_count']} gaps",
         f"bad OHLC rows: {r['bad_ohlc_rows']}   negative volume: {r['negative_volume_rows']}"
         f"   zero-volume: {r['zero_volume_pct']:.2f}%",
     ]
+    if r["duplicates_removed"] is not None:
+        lines.insert(2, f"duplicates removed: {r['duplicates_removed']}")
+    if r["incomplete_bars"] is not None:
+        lines.append(f"bars built from incomplete 1m data: {r['incomplete_bars']:,}")
     for g in r["largest_gaps"]:
         lines.append(f"  gap at {g['gap_start']}: {g['missing']:,} candles")
     if r["interval"] == "1s":

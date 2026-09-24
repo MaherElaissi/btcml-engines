@@ -1,0 +1,990 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "btcml API",
+    "description": "Read-only API for the btcml dashboard.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Health",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Status",
+        "description": "Roadmap progress parsed from TODO.md.",
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/data/coverage": {
+      "get": {
+        "tags": [
+          "data"
+        ],
+        "summary": "Data Coverage",
+        "description": "What is on disk for each interval (cheap: metadata only).",
+        "operationId": "data_coverage",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Coverage"
+                  },
+                  "type": "array",
+                  "title": "Response Data Coverage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/data/{interval}/quality": {
+      "get": {
+        "tags": [
+          "data"
+        ],
+        "summary": "Data Quality",
+        "description": "The `btcml check` report. Slow the first time for 1s; cached until files change.",
+        "operationId": "data_quality",
+        "parameters": [
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Interval"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quality"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/data/{interval}/candles": {
+      "get": {
+        "tags": [
+          "data"
+        ],
+        "summary": "Data Candles",
+        "description": "OHLCV, downsampled into larger buckets when the range holds more than max_points candles.",
+        "operationId": "data_candles",
+        "parameters": [
+          {
+            "name": "interval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Interval"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "inclusive, UTC if no offset given",
+              "title": "Start"
+            },
+            "description": "inclusive, UTC if no offset given"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "exclusive; default: after the newest candle",
+              "title": "End"
+            },
+            "description": "exclusive; default: after the newest candle"
+          },
+          {
+            "name": "max_points",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 10,
+              "default": 1000,
+              "title": "Max Points"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Candles"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/news/feeds": {
+      "get": {
+        "tags": [
+          "news"
+        ],
+        "summary": "News Feeds",
+        "description": "Collector health and article counts per feed.",
+        "operationId": "news_feeds",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FeedStatus"
+                  },
+                  "type": "array",
+                  "title": "Response News Feeds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/news/latest": {
+      "get": {
+        "tags": [
+          "news"
+        ],
+        "summary": "News Latest",
+        "operationId": "news_latest",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Article"
+                  },
+                  "title": "Response News Latest"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/news/volume": {
+      "get": {
+        "tags": [
+          "news"
+        ],
+        "summary": "News Volume",
+        "description": "Live (non-backfill) articles per UTC hour.",
+        "operationId": "news_volume",
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2160,
+              "minimum": 1,
+              "default": 48,
+              "title": "Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewsVolume"
+                  },
+                  "title": "Response News Volume"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Article": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "first_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen At"
+          },
+          "backfill": {
+            "type": "boolean",
+            "title": "Backfill"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "title",
+          "link",
+          "published_at",
+          "first_seen_at",
+          "backfill"
+        ],
+        "title": "Article"
+      },
+      "Candles": {
+        "properties": {
+          "interval": {
+            "$ref": "#/components/schemas/Interval"
+          },
+          "bucket_seconds": {
+            "type": "integer",
+            "title": "Bucket Seconds"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "t": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "T"
+          },
+          "open": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Open"
+          },
+          "high": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "High"
+          },
+          "low": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Low"
+          },
+          "close": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Close"
+          },
+          "volume": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Volume"
+          }
+        },
+        "type": "object",
+        "required": [
+          "interval",
+          "bucket_seconds",
+          "start",
+          "end",
+          "t",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume"
+        ],
+        "title": "Candles",
+        "description": "Column arrays; `t` is the bucket open time in Unix seconds (lightweight-charts format)."
+      },
+      "Coverage": {
+        "properties": {
+          "interval": {
+            "$ref": "#/components/schemas/Interval"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "files": {
+            "type": "integer",
+            "title": "Files"
+          },
+          "first": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First"
+          },
+          "last": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last",
+            "description": "open time of the newest stored candle"
+          },
+          "stored_rows": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stored Rows",
+            "description": "rows on disk, before deduplication"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "lag_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lag Seconds",
+            "description": "seconds since the newest candle closed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "interval",
+          "available",
+          "files"
+        ],
+        "title": "Coverage"
+      },
+      "FeedStatus": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "articles": {
+            "type": "integer",
+            "title": "Articles"
+          },
+          "live_articles": {
+            "type": "integer",
+            "title": "Live Articles",
+            "description": "articles with a trustworthy first_seen_at (backfill=0)"
+          },
+          "last_article_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Article At"
+          },
+          "last_poll_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Poll At"
+          },
+          "last_ok_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Ok At"
+          },
+          "last_new": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last New"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "healthy": {
+            "type": "boolean",
+            "title": "Healthy",
+            "description": "last successful poll within 3 poll intervals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "configured",
+          "articles",
+          "live_articles",
+          "last_article_at",
+          "last_poll_at",
+          "last_ok_at",
+          "last_new",
+          "last_error",
+          "healthy"
+        ],
+        "title": "FeedStatus"
+      },
+      "Gap": {
+        "properties": {
+          "gap_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Gap Start"
+          },
+          "missing": {
+            "type": "integer",
+            "title": "Missing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gap_start",
+          "missing"
+        ],
+        "title": "Gap"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status",
+            "default": "ok"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "time"
+        ],
+        "title": "Health"
+      },
+      "Interval": {
+        "type": "string",
+        "enum": [
+          "1s",
+          "1m",
+          "5m",
+          "10m",
+          "1h"
+        ],
+        "title": "Interval"
+      },
+      "NewsVolume": {
+        "properties": {
+          "hour": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Hour"
+          },
+          "articles": {
+            "type": "integer",
+            "title": "Articles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hour",
+          "articles"
+        ],
+        "title": "NewsVolume"
+      },
+      "Quality": {
+        "properties": {
+          "interval": {
+            "$ref": "#/components/schemas/Interval"
+          },
+          "rows": {
+            "type": "integer",
+            "title": "Rows"
+          },
+          "first": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First"
+          },
+          "last": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last"
+          },
+          "duplicates_removed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicates Removed",
+            "description": "raw intervals only"
+          },
+          "expected_rows": {
+            "type": "integer",
+            "title": "Expected Rows"
+          },
+          "missing_rows": {
+            "type": "integer",
+            "title": "Missing Rows"
+          },
+          "missing_pct": {
+            "type": "number",
+            "title": "Missing Pct"
+          },
+          "gap_count": {
+            "type": "integer",
+            "title": "Gap Count"
+          },
+          "largest_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/Gap"
+            },
+            "type": "array",
+            "title": "Largest Gaps"
+          },
+          "bad_ohlc_rows": {
+            "type": "integer",
+            "title": "Bad Ohlc Rows"
+          },
+          "negative_volume_rows": {
+            "type": "integer",
+            "title": "Negative Volume Rows"
+          },
+          "zero_volume_pct": {
+            "type": "number",
+            "title": "Zero Volume Pct"
+          },
+          "incomplete_bars": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incomplete Bars",
+            "description": "built bars only: buckets made from fewer 1m candles than expected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "interval",
+          "rows",
+          "first",
+          "last",
+          "expected_rows",
+          "missing_rows",
+          "missing_pct",
+          "gap_count",
+          "largest_gaps",
+          "bad_ohlc_rows",
+          "negative_volume_rows",
+          "zero_volume_pct"
+        ],
+        "title": "Quality"
+      },
+      "RoadmapItem": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group",
+            "description": "bold sub-heading inside the section, if any"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "done"
+        ],
+        "title": "RoadmapItem"
+      },
+      "RoadmapSection": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "done",
+              "in_progress",
+              "not_started"
+            ],
+            "title": "Status"
+          },
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RoadmapItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "status",
+          "done",
+          "total",
+          "items"
+        ],
+        "title": "RoadmapSection"
+      },
+      "Status": {
+        "properties": {
+          "done": {
+            "type": "integer",
+            "title": "Done"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/RoadmapSection"
+            },
+            "type": "array",
+            "title": "Sections"
+          }
+        },
+        "type": "object",
+        "required": [
+          "done",
+          "total",
+          "sections"
+        ],
+        "title": "Status"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

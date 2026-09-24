@@ -22,6 +22,10 @@ class Config:
     history_months: dict[str, int]
     poll_seconds: int
     feeds: list[Feed]
+    root: Path  # folder holding config.toml (and TODO.md)
+    api_host: str = "127.0.0.1"
+    api_port: int = 8000
+    api_cors_origins: tuple[str, ...] = ("http://localhost:5173",)
 
     def klines_dir(self, interval: str) -> Path:
         return self.data_dir / "raw" / "klines" / interval
@@ -37,6 +41,7 @@ class Config:
 def load_config(path: Path | None = None) -> Config:
     path = path or Path(__file__).resolve().parents[2] / "config.toml"
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
+    api = raw.get("api", {})
     data_dir = Path(raw["data_dir"])
     if not data_dir.is_absolute():
         data_dir = path.parent / data_dir
@@ -48,4 +53,8 @@ def load_config(path: Path | None = None) -> Config:
         history_months={k: int(v) for k, v in raw["history"].items()},
         poll_seconds=int(raw["news"]["poll_seconds"]),
         feeds=[Feed(**f) for f in raw["news"]["feeds"]],
+        root=path.parent,
+        api_host=api.get("host", "127.0.0.1"),
+        api_port=int(api.get("port", 8000)),
+        api_cors_origins=tuple(api.get("cors_origins", ["http://localhost:5173"])),
     )

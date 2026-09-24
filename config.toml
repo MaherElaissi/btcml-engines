@@ -11,6 +11,13 @@ api_url = "https://api.binance.com"
 "1m" = 24
 "1s" = 4
 
+# Read-only API for the dashboard ("btcml serve"). Keep host on 127.0.0.1 unless
+# BTCML_API_TOKEN is set; the server refuses other hosts without a token.
+[api]
+host = "127.0.0.1"
+port = 8000
+cors_origins = ["http://localhost:5173"]  # Vite dev server of the dashboard repo
+
 [news]
 poll_seconds = 120
 

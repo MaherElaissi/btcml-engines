@@ -79,8 +79,39 @@ work is chunked and Parquet is scanned lazily.
 - [ ] Live prediction loop for every engine and the meta-engine, predictions logged to disk
 - [ ] Compare live vs backtest results to detect drift or leakage
 - [ ] Scheduled retraining (walk-forward, e.g. weekly) with model versioning
-- [ ] Simple dashboard for predictions vs outcomes
+- [ ] Live predictions vs outcomes in the dashboard (see Dashboard track, D5)
 - [ ] Decision point: consider real trading only after a long, consistent paper-trading record
+
+## Dashboard track (runs alongside phases 1-6)
+Frontend in a separate repo (e.g. `btcml-dashboard`); this repo only exposes a **read-only** API.
+Each milestone ships with the phase it shows, so progress is visible from the start.
+Bind the API to localhost by default; add a token before exposing it on a network.
+
+**API side (this repo, `btcml/api/`)**
+- [x] D0: FastAPI + uvicorn server (`btcml serve`), CORS for the dashboard origin, versioned routes (`/api/v1/...`)
+- [x] D0: Shared response schemas (pydantic) and an exported OpenAPI spec the frontend generates its client from
+- [x] D0: `/status`: roadmap progress parsed from TODO.md (per phase: done / total items)
+- [x] D1 (Phase 0): `/data/coverage`, `/data/{interval}/quality` (the `btcml check` report as JSON),
+      `/data/{interval}/candles?start&end&max_points` (downsampled for charts), `/news/feeds` (collector
+      heartbeat per feed), `/news/latest`, `/news/volume`
+- [ ] D2 (Phase 1): `/runs` and `/runs/{id}` from MLflow: walk-forward folds, metrics per fold, baseline comparison,
+      feature importance
+- [ ] D3 (Phase 2): `/backtests/{id}`: equity curve, drawdown, trades, metrics after costs
+- [ ] D4 (Phases 3-4): per-engine and meta-engine metrics, ablation results, regime labels
+- [ ] D5 (Phase 6): WebSocket `/ws/live`: new candles, each engine's prediction, meta prediction, and the
+      realized outcome once the candle closes; replay the last N events on reconnect
+- [ ] Long-running jobs (download, training, backtest) write progress to a small SQLite `jobs` table;
+      `/jobs` lists them and `/ws/jobs` streams progress
+
+**Frontend (separate repo)**
+- [ ] Stack: Vite + React + TypeScript, typed client generated from the OpenAPI spec, TradingView
+      lightweight-charts for candles, a light charting lib for metrics
+- [ ] Overview page: roadmap progress per phase, running jobs, collector health
+- [ ] Data page: coverage and gaps per interval, candle chart, news volume over time
+- [ ] Models page: runs table, fold-by-fold metrics vs baselines, calibration plot, feature importance
+- [ ] Backtest page: equity / drawdown curves, engine vs baseline comparison after costs
+- [ ] Live page: candle chart with prediction markers, rolling hit rate, live vs backtest drift
+- [ ] Auto-reconnecting WebSocket client; show stale-data warnings when the feed stops
 
 ## Later / ideas
 - [ ] Order-book depth and trade-flow features (largest expected gain for the 1s engine)

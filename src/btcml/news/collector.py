@@ -36,14 +36,39 @@ CREATE TABLE IF NOT EXISTS articles (
     backfill      INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_articles_seen ON articles(first_seen_at);
+-- latest poll outcome per feed (collector heartbeat for the dashboard)
+CREATE TABLE IF NOT EXISTS feed_status (
+    source       TEXT PRIMARY KEY,
+    last_poll_at TEXT NOT NULL,
+    last_ok_at   TEXT,
+    last_new     INTEGER,
+    last_error   TEXT
+);
 """
 
 
 def open_db(cfg: Config) -> sqlite3.Connection:
     cfg.news_db.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(cfg.news_db)
+    conn.execute("PRAGMA journal_mode=WAL")  # lets the API read while we write
     conn.executescript(SCHEMA)
     return conn
+
+
+def record_poll(
+    conn: sqlite3.Connection, source: str, new: int | None, error: str | None = None
+) -> None:
+    now = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+    conn.execute(
+        """INSERT INTO feed_status VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(source) DO UPDATE SET
+            last_poll_at = excluded.last_poll_at,
+            last_ok_at = COALESCE(excluded.last_ok_at, feed_status.last_ok_at),
+            last_new = excluded.last_new,
+            last_error = excluded.last_error""",
+        (source, now, None if error else now, new, error),
+    )
+    conn.commit()
 
 
 def _iso(struct) -> str | None:
@@ -100,8 +125,10 @@ def run(cfg: Config, once: bool = False) -> None:
                 try:
                     n = poll_feed(conn, client, feed)
                     log.info("%s: %d new", feed.name, n)
+                    record_poll(conn, feed.name, n)
                 except Exception as exc:  # one broken feed must not stop the others
                     log.warning("%s: failed (%s)", feed.name, exc)
+                    record_poll(conn, feed.name, None, str(exc)[:500])
             if once:
                 return
             time.sleep(cfg.poll_seconds)
