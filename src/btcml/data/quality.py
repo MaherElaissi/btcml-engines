@@ -54,12 +54,13 @@ def check(cfg: Config, interval: str) -> dict:
     if interval not in ("1s", "1m"):  # 5m / 10m / 1h are built from 1m ("btcml build-bars")
         path = cfg.bars_path(interval)
         if not path.exists():
-            raise SystemExit(f"No {interval} bars at {path}. Run: btcml build-bars")
+            raise FileNotFoundError(f"No {interval} bars at {path}. Run: btcml build-bars")
         return analyze(pl.read_parquet(path), interval)
+    df = load_klines(cfg, interval)  # raises a clear error when there is no data yet
     raw_rows = (
         pl.scan_parquet(kline_files(cfg, interval)).select(pl.len()).collect().item()
     )
-    return analyze(load_klines(cfg, interval), interval, raw_rows)
+    return analyze(df, interval, raw_rows)
 
 
 def format_report(r: dict) -> str:

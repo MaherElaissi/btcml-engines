@@ -88,11 +88,12 @@ Each milestone ships with the phase it shows, so progress is visible from the st
 Bind the API to localhost by default; add a token before exposing it on a network.
 
 **API side (this repo, `btcml/api/`)**
-- [ ] D0: FastAPI + uvicorn server (`btcml serve`), CORS for the dashboard origin, versioned routes (`/api/v1/...`)
-- [ ] D0: Shared response schemas (pydantic) and an exported OpenAPI spec the frontend generates its client from
-- [ ] D0: `/status`: roadmap progress parsed from TODO.md (per phase: done / total items)
-- [ ] D1 (Phase 0): `/data/{interval}/quality` (the `btcml check` report as JSON), `/data/{interval}/candles?start&end`
-      (downsampled for charts), `/news/stats` and `/news/latest`, collector heartbeat (last poll time per feed)
+- [x] D0: FastAPI + uvicorn server (`btcml serve`), CORS for the dashboard origin, versioned routes (`/api/v1/...`)
+- [x] D0: Shared response schemas (pydantic) and an exported OpenAPI spec the frontend generates its client from
+- [x] D0: `/status`: roadmap progress parsed from TODO.md (per phase: done / total items)
+- [x] D1 (Phase 0): `/data/coverage`, `/data/{interval}/quality` (the `btcml check` report as JSON),
+      `/data/{interval}/candles?start&end&max_points` (downsampled for charts), `/news/feeds` (collector
+      heartbeat per feed), `/news/latest`, `/news/volume`
 - [ ] D2 (Phase 1): `/runs` and `/runs/{id}` from MLflow: walk-forward folds, metrics per fold, baseline comparison,
       feature importance
 - [ ] D3 (Phase 2): `/backtests/{id}`: equity curve, drawdown, trades, metrics after costs
