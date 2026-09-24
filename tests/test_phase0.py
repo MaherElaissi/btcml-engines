@@ -72,3 +72,19 @@ def test_analyze_finds_gap():
     assert r["gap_count"] == 1
     assert r["largest_gaps"][0]["missing"] == 1
     assert r["bad_ohlc_rows"] == 0
+
+
+def test_check_reads_built_bars(tmp_path):
+    from btcml.config import load_config
+    from btcml.data.quality import check
+    from btcml.data.storage import write_parquet_atomic
+
+    cfg_path = tmp_path / "config.toml"
+    cfg_path.write_text(
+        'symbol = "BTCUSDT"\ndata_dir = "data"\n[binance]\narchive_url = "a"\napi_url = "b"\n'
+        '[history]\n"1m" = 1\n[news]\npoll_seconds = 1\nfeeds = []\n'
+    )
+    cfg = load_config(cfg_path)
+    write_parquet_atomic(resample_ohlcv(_minutes(60), "5m", "1m"), cfg.bars_path("5m"))
+    r = check(cfg, "5m")
+    assert r["rows"] == 12 and r["missing_rows"] == 0 and r["incomplete_bars"] == 0
